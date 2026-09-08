@@ -1,0 +1,19 @@
+{
+  "name": "construct-docs",
+  "version": "1.0.0",
+  "description": "Documentation for Construct Framework",
+  "type": "module",
+  "scripts": {
+    "dev": "vitepress dev",
+    "build": "vitepress build",
+    "preview": "vitepress preview"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "vitepress": "^1.6.4",
+    "vue": "^3.5.22"
+  }
+}

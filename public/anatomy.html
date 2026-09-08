@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Anatomy of a Space — Construct</title>
+<style>
+  :root {
+    --bg: #f4f1ec;
+    --ink: #1d1b18;
+    --muted: #8a8278;
+    --line: #c9c1b5;
+    --card: #ffffff;
+    --surface: #f2eee7;
+    --accent: #d8584a;
+    --accent-soft: #f8d9d4;
+    --accent-tint: #fdeeeb;
+    --shadow: 0 24px 60px -28px rgba(0,0,0,.25), 0 4px 14px -6px rgba(0,0,0,.08);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Inter, sans-serif; }
+  body { min-height: 100vh; padding: 48px 32px 96px; }
+
+  header { max-width: 1100px; margin: 0 auto 28px; }
+  header h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: -0.02em; }
+  header p { margin: 0; color: var(--muted); font-size: 15px; max-width: 60ch; line-height: 1.55; }
+  header .hint { margin-top: 14px; font-size: 12px; color: var(--accent); letter-spacing: .08em; text-transform: uppercase; font-weight: 700; }
+
+  .stage {
+    position: relative;
+    max-width: 1100px;
+    margin: 40px auto 0;
+    height: 720px;
+    perspective: 2400px;
+  }
+  .iso {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    transform: rotateX(56deg) rotateZ(-36deg);
+  }
+
+  .layer {
+    position: absolute;
+    background: var(--card);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    transform-style: preserve-3d;
+    transition: transform .4s cubic-bezier(.2,.7,.2,1), box-shadow .35s ease, filter .25s ease, opacity .25s ease;
+    will-change: transform;
+  }
+
+  /* Host chrome — full window at z=0 */
+  .host {
+    left: 0; top: 0; right: 0; bottom: 0;
+    --z: 0px;
+    transform: translateZ(0);
+    overflow: hidden;
+  }
+  .host .traffic { position: absolute; left: 16px; top: 16px; display: flex; gap: 6px; z-index: 2; }
+  .host .traffic span { width: 11px; height: 11px; border-radius: 50%; }
+  .host .traffic span:nth-child(1) { background: #ed6a5e; }
+  .host .traffic span:nth-child(2) { background: #f4bf4f; }
+  .host .traffic span:nth-child(3) { background: #61c554; }
+
+  /* Sidebar rail — its own layer, lifted ~140px on Z */
+  .sidebar {
+    left: 0; top: 0; bottom: 0;
+    width: 64px;
+    background: var(--bg);
+    border-right: 1px solid #ece6dc;
+    border-radius: 14px 0 0 14px;
+    box-shadow: none;
+    --z: 140px;
+    transform: translateZ(0);
+    display: flex; flex-direction: column; align-items: center; padding: 48px 0 16px;
+    gap: 8px;
+  }
+  .sidebar .logo { width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 14px; margin-bottom: 8px; }
+  .sidebar .pill { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; color: #8a8278; font-size: 14px; }
+  .sidebar .pill.active { background: var(--accent-tint); color: var(--accent); }
+  .sidebar .bottom { margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .sidebar .avatar { width: 28px; height: 28px; border-radius: 50%; background: #efeae1; color: #8a8278; display: grid; place-items: center; font-size: 12px; font-weight: 600; }
+
+  .host .slot {
+    position: absolute; left: 64px; right: 0; top: 0; bottom: 0;
+    background: var(--surface);
+  }
+
+  /* Toolbar — top strip, lifted ~180px on Z */
+  .toolbar {
+    left: 64px; right: 0; top: 0;
+    height: 64px;
+    border-radius: 0;
+    background: #f7f3ec;
+    border-bottom: 1px solid #ece6dc;
+    box-shadow: none;
+    --z: 180px;
+    transform: translateZ(0);
+    padding: 12px 16px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .toolbar .crumb { display: flex; align-items: center; gap: 8px; }
+  .toolbar .crumb .dot { width: 28px; height: 28px; border-radius: 8px; background: var(--accent-tint); display: grid; place-items: center; color: var(--accent); font-size: 12px; }
+  .toolbar .crumb .label { font-weight: 700; letter-spacing: .08em; font-size: 13px; }
+  .toolbar .spacer { flex: 1; }
+  .toolbar .btn {
+    background: var(--accent); color: #fff;
+    border: none; border-radius: 8px;
+    padding: 8px 14px; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+    box-shadow: 0 6px 14px -6px rgba(216,88,74,.55);
+  }
+  .toolbar .icon { width: 32px; height: 32px; border-radius: 8px; background: #f1ece4; display: grid; place-items: center; color: #8a8278; }
+
+  /* Content — boards grid, lifted ~100px on Z */
+  .content {
+    left: 64px; right: 0; top: 64px; bottom: 0;
+    border-radius: 0;
+    background: var(--surface);
+    box-shadow: none;
+    --z: 100px;
+    transform: translateZ(0);
+    padding: 16px;
+  }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .card {
+    background: #f7f3ec;
+    border: 1px solid #ece6dc;
+    border-radius: 10px;
+    padding: 14px;
+    min-height: 130px;
+    display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .card .head { display: flex; align-items: center; justify-content: space-between; }
+  .card .title { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; }
+  .card .title .dot { width: 18px; height: 18px; border-radius: 4px; background: var(--accent); opacity: .85; }
+  .badge { font-size: 10px; padding: 3px 8px; border-radius: 999px; border: 1px solid #ece6dc; color: #8a8278; }
+  .badge.warn { background: #fff5d6; border-color: #f0e3b3; color: #a07a00; }
+  .card .foot { display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--muted); }
+  .card .actions { display: flex; gap: 8px; color: var(--accent); }
+
+  /* Click a layer to lift it */
+  .iso .layer { cursor: pointer; }
+  .iso .layer.active {
+    box-shadow: 0 36px 80px -28px rgba(0,0,0,.32), 0 8px 22px -8px rgba(0,0,0,.12);
+    transform: translateZ(var(--z));
+  }
+  .iso:has(.layer.active) .layer:not(.active) { filter: brightness(.97); opacity: .82; }
+
+  /* Annotations as floating bubbles — visible only when corresponding layer is active */
+  .notes { position: absolute; inset: 0; pointer-events: none; }
+  .note { opacity: 0; transform: translateY(6px); transition: opacity .25s ease, transform .25s ease; }
+  .note.show { opacity: 1; transform: translateY(0); }
+  .note {
+    position: absolute; max-width: 240px; pointer-events: auto;
+    background: #fff;
+    border: 1px solid #ece6dc;
+    border-radius: 14px;
+    padding: 12px 14px;
+    box-shadow: 0 18px 40px -20px rgba(0,0,0,.25), 0 4px 10px -4px rgba(0,0,0,.08);
+  }
+  .note::after {
+    content: "";
+    position: absolute;
+    width: 14px; height: 14px;
+    background: #fff;
+    border-right: 1px solid #ece6dc;
+    border-bottom: 1px solid #ece6dc;
+    transform: rotate(45deg);
+  }
+  .note h3 { margin: 0 0 4px; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); font-weight: 800; }
+  .note p  { margin: 0; font-size: 13px; line-height: 1.45; color: var(--ink); }
+  .note code { background: #f7f2ea; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+
+  .note.toolbar-note   { top: 4%;   right: 8px; }
+  .note.toolbar-note::after { left: -8px; top: 24px; transform: rotate(135deg); }
+  .note.content-note   { top: 40%;  right: 8px; }
+  .note.content-note::after { left: -8px; top: 24px; transform: rotate(135deg); }
+  .note.chrome-note    { bottom: 8%; left: 8px; }
+  .note.chrome-note::after { right: -8px; top: 24px; transform: rotate(-45deg); }
+  .note.sidebar-note   { bottom: 36%; left: 8px; }
+  .note.sidebar-note::after { right: -8px; top: 24px; transform: rotate(-45deg); }
+
+  /* Legend */
+  .legend {
+    max-width: 1100px; margin: 80px auto 0;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+  }
+  .legend .col { background: #fff; border: 1px solid #ece6dc; border-radius: 12px; padding: 18px; }
+  .legend h4 { margin: 0 0 6px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+  .legend p { margin: 0 0 10px; font-size: 14px; line-height: 1.5; color: var(--ink); }
+  .legend pre { margin: 0; background: #f7f2ea; border-radius: 8px; padding: 10px 12px; font-size: 12px; overflow: auto; }
+  .legend code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+  footer { max-width: 1100px; margin: 56px auto 0; color: var(--muted); font-size: 13px; }
+
+  @media (max-width: 760px) {
+    .legend { grid-template-columns: 1fr; }
+    .grid { grid-template-columns: repeat(2, 1fr) !important; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Anatomy of a Space</h1>
+  <p>The host owns the chrome. Your space declares <code>pages</code> in the manifest; the host renders the sidebar. Your page teleports content into the toolbar slot; the host shows it. The active page renders into the canvas.</p>
+  <div class="hint">Click a layer to lift it</div>
+</header>
+
+<div class="stage">
+  <div class="iso" id="iso">
+
+    <!-- Host chrome (window frame + canvas slot) -->
+    <div class="layer host" data-layer="chrome">
+      <div class="traffic"><span></span><span></span><span></span></div>
+      <div class="slot"></div>
+    </div>
+
+    <!-- Sidebar rail — icons from manifest pages[] -->
+    <div class="layer sidebar" data-layer="sidebar">
+      <div class="logo">O</div>
+      <div class="pill">?</div>
+      <div class="pill">←</div>
+      <div class="pill active">▤</div>
+      <div class="pill">⊞</div>
+      <div class="pill">⚙</div>
+      <div class="bottom">
+        <div class="pill">🔔</div>
+        <div class="avatar">F</div>
+      </div>
+    </div>
+
+    <!-- Space toolbar -->
+    <div class="layer toolbar" data-layer="toolbar">
+      <div class="crumb">
+        <span class="dot">▤</span>
+        <span class="label">BOARDS</span>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn">+ Create board</button>
+      <div class="icon">↗</div>
+    </div>
+
+    <!-- Space content -->
+    <div class="layer content" data-layer="content">
+      <div class="grid">
+        <div class="card">
+          <div class="head"><div class="title"><span class="dot"></span>Bugs</div><span class="badge">🔓 Open</span></div>
+          <div class="foot"><span>‖ 8 tickets</span><span class="actions">✎ 🗑</span></div>
+        </div>
+        <div class="card">
+          <div class="head"><div class="title"><span class="dot"></span>Construct Website</div><span class="badge warn">🔒 Restricted</span></div>
+          <div class="foot"><span>‖ 1 ticket · 👥 3</span><span class="actions">✎ 🗑</span></div>
+        </div>
+        <div class="card">
+          <div class="head"><div class="title"><span class="dot"></span>Features</div><span class="badge">🔓 Open</span></div>
+          <div class="foot"><span>‖ 7 tickets</span><span class="actions">✎ 🗑</span></div>
+        </div>
+        <div class="card">
+          <div class="head"><div class="title"><span class="dot"></span>PPP</div><span class="badge warn">🔒 Restricted</span></div>
+          <div class="foot"><span>‖ 8 tickets · 👥 4</span><span class="actions">✎ 🗑</span></div>
+        </div>
+        <div class="card">
+          <div class="head"><div class="title"><span class="dot"></span>Spaces</div><span class="badge">🔓 Open</span></div>
+          <div class="foot"><span>‖ 1 ticket</span><span class="actions">✎ 🗑</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="notes" id="notes">
+    <div class="note toolbar-note" data-for="toolbar">
+      <h3>Space toolbar</h3>
+      <p>Your page calls <code>useToolbar()</code> + <code>useBreadcrumb()</code>. The host renders the slot; your nodes teleport in.</p>
+    </div>
+    <div class="note content-note" data-for="content">
+      <h3>Space content</h3>
+      <p>The active page from <code>pages[]</code> renders here — your Vue tree owns the canvas.</p>
+    </div>
+    <div class="note chrome-note" data-for="chrome">
+      <h3>Host chrome</h3>
+      <p>Window frame, traffic lights, canvas surface — all Construct. Your space never renders these.</p>
+    </div>
+    <div class="note sidebar-note" data-for="sidebar">
+      <h3>Sidebar</h3>
+      <p>One rail icon per entry in your manifest's <code>pages[]</code>. The host builds the rail; clicking a pill swaps the active page.</p>
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="col">
+    <h4>Sidebar — from pages[]</h4>
+    <p>The host reads your manifest and renders one rail icon per page. The <code>default: true</code> page is the landing route.</p>
+    <pre><code>{
+  "pages": [
+    { "id": "home",   "path": "",       "icon": "i-lucide-home",   "default": true },
+    { "id": "boards", "path": "boards", "icon": "i-lucide-kanban" }
+  ]
+}</code></pre>
+  </div>
+  <div class="col">
+    <h4>Toolbar — teleported</h4>
+    <p>The host renders an empty toolbar slot above the canvas. Your page fills it; the SDK teleports the nodes into the slot.</p>
+    <pre><code>const tb = useToolbar()
+const bc = useBreadcrumb()
+
+bc.set([{ label: 'Boards' }])
+tb.actions([
+  { label: '+ Create board', onClick: createBoard }
+])</code></pre>
+  </div>
+  <div class="col">
+    <h4>Content — your Vue tree</h4>
+    <p>The active page component mounts into the canvas. Routing between pages is the host's job; inside a page you own the DOM.</p>
+    <pre><code>// pages/boards.vue
+&lt;template&gt;
+  &lt;BoardGrid :boards="boards" /&gt;
+&lt;/template&gt;</code></pre>
+  </div>
+</div>
+
+<footer>
+  Three layers, one render. Your space code never knows where the toolbar lives.
+</footer>
+
+<script>
+  const iso = document.getElementById('iso');
+  const notes = document.getElementById('notes');
+
+  function setActive(layerKey) {
+    iso.querySelectorAll('.layer').forEach(el => {
+      el.classList.toggle('active', el.dataset.layer === layerKey);
+    });
+    notes.querySelectorAll('.note').forEach(el => {
+      el.classList.toggle('show', el.dataset.for === layerKey);
+    });
+  }
+
+  function clearActive() {
+    iso.querySelectorAll('.layer').forEach(el => el.classList.remove('active'));
+    notes.querySelectorAll('.note').forEach(el => el.classList.remove('show'));
+  }
+
+  iso.addEventListener('click', (e) => {
+    const layer = e.target.closest('.layer');
+    if (!layer) return;
+    if (layer.classList.contains('active')) clearActive();
+    else setActive(layer.dataset.layer);
+    e.stopPropagation();
+  });
+
+  document.addEventListener('click', (e) => {
+    if (iso.contains(e.target)) return;
+    clearActive();
+  });
+</script>
+
+</body>
+</html>
